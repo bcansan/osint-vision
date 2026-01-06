@@ -10,15 +10,7 @@ cloudinary.config({
 });
 
 export async function POST(req: NextRequest) {
-    console.log('🔍 Google Lens API called');
-    
-  // DEBUG: Check environment variables
-    console.log('🔍 DEBUG Environment Variables:', {
-        cloudinary_cloud_name: process.env.CLOUDINARY_CLOUD_NAME ? '✅ SET' : '❌ MISSING',
-        cloudinary_api_key: process.env.CLOUDINARY_API_KEY ? '✅ SET' : '❌ MISSING',
-        cloudinary_api_secret: process.env.CLOUDINARY_API_SECRET ? '✅ SET' : '❌ MISSING',
-        serpapi_key: process.env.SERPAPI_API_KEY ? '✅ SET' : '❌ MISSING',
-    });    
+    console.log('🔍 Google Lens API called'); 
 
     let uploadedImageId: string | null = null;
     
