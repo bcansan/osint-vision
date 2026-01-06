@@ -50,8 +50,9 @@ if (mode === 'military') {
         console.log('📦 FormData created');
         
         // Call our Google Lens endpoint
-        const baseUrl = process.env.NEXT_PUBLIC_APP_URL ||
-            (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000');
+        // Force production URL for API calls
+const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 
+    'https://osint-vision.vercel.app';
         console.log('🌐 Base URL:', baseUrl);
         
         const lensResponse = await fetch(`${baseUrl}/api/google-lens`, {
