@@ -1,9 +1,39 @@
 import Link from 'next/link';
 import { MODE_CONFIGS } from '@/lib/prompts';
+import { SignInButton } from '@/components/SignInButton';
+import { UserButton } from '@/components/UserButton';
+import { currentUser } from '@clerk/nextjs/server';
 
-export default function HomePage() {
+export default async function HomePage() {
+  const user = await currentUser();
+
   return (
     <div className="min-h-screen bg-gray-900 text-gray-100 flex flex-col">
+      <nav className="border-b border-white/10 bg-black/20 backdrop-blur-sm sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            <div className="flex items-center gap-2">
+              <span className="text-2xl">🔍</span>
+              <h1 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-green-400 to-blue-500">
+                OSINT VISION
+              </h1>
+            </div>
+            <div className="flex items-center gap-4">
+              {user ? (
+                <>
+                  <span className="text-sm text-gray-400 hidden sm:block">
+                    {user.emailAddresses[0]?.emailAddress}
+                  </span>
+                  <UserButton />
+                </>
+              ) : (
+                <SignInButton />
+              )}
+            </div>
+          </div>
+        </div>
+      </nav>
+
       {/* Hero Section */}
       <div className="flex-1 flex flex-col items-center justify-center relative overflow-hidden">
         {/* Background Grid Effect */}
