@@ -9,6 +9,7 @@ import { ExifDisplay } from '@/components/ExifDisplay';
 import { ExportButtons } from '@/components/ExportButtons';
 import { EthicalDisclaimer } from '@/components/EthicalDisclaimer';
 import { AnalysisMode, AnalysisResult, ExifData } from '@/lib/types';
+import { RateLimitModal } from '@/components/RateLimitModal';
 
 export default function AnalyzePage() {
     const [selectedMode, setSelectedMode] = useState<AnalysisMode>('people');
@@ -18,6 +19,14 @@ export default function AnalyzePage() {
     const [analysisSteps, setAnalysisSteps] = useState<string[]>([]);
     const [result, setResult] = useState<AnalysisResult | null>(null);
     const [exifData, setExifData] = useState<ExifData | undefined>(undefined);
+
+    // Rate limit modal state
+    const [showRateLimitModal, setShowRateLimitModal] = useState(false);
+    const [rateLimitInfo, setRateLimitInfo] = useState<{
+        userType: 'anonymous' | 'free' | 'pro';
+        resetDate?: string;
+        limit?: number;
+    }>({ userType: 'anonymous' });
 
     const handleImageSelect = (file: File) => {
         setSelectedFile(file);
@@ -82,6 +91,23 @@ export default function AnalyzePage() {
                 method: 'POST',
                 body: formData,
             });
+
+            if (claudeResponse.status === 429) {
+                const errorData = await claudeResponse.json();
+
+                // Determine user type from error message
+                const isAnonymous = errorData.message.includes('sign in');
+
+                setRateLimitInfo({
+                    userType: isAnonymous ? 'anonymous' : 'free',
+                    resetDate: errorData.resetAt,
+                    limit: errorData.limit
+                });
+                setShowRateLimitModal(true);
+                setLoading(false);
+                setAnalysisSteps([]);
+                return;
+            }
 
             if (!claudeResponse.ok) {
                 throw new Error('Analysis failed');
@@ -247,6 +273,14 @@ export default function AnalyzePage() {
                 <p>OSINT Vision v1.0 | For Authorized Security Research Only</p>
                 <p className="mt-1">Built by @bcansan</p>
             </footer>
+
+            <RateLimitModal
+                show={showRateLimitModal}
+                onClose={() => setShowRateLimitModal(false)}
+                userType={rateLimitInfo.userType}
+                resetDate={rateLimitInfo.resetDate}
+                limit={rateLimitInfo.limit}
+            />
         </div>
     );
 }
