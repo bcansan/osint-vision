@@ -3,13 +3,56 @@
 import { AnalysisResult } from '@/lib/types';
 import jsPDF from 'jspdf';
 import { saveAs } from 'file-saver';
+import { useState } from 'react';
+import { useUser } from '@clerk/nextjs';
+import { PaywallModal } from './PaywallModal';
 
 interface ExportButtonsProps {
     result: AnalysisResult | null;
 }
 
 export function ExportButtons({ result }: ExportButtonsProps) {
+    const { user } = useUser();
+    const [showPaywall, setShowPaywall] = useState(false);
+    const [isChecking, setIsChecking] = useState(false);
+
     if (!result) return null;
+
+    const checkAccess = async () => {
+        if (!user) {
+            setShowPaywall(true);
+            return false;
+        }
+
+        setIsChecking(true);
+        try {
+            const response = await fetch('/api/check-subscription');
+            const data = await response.json();
+
+            // Allow if pro or developer (admin)
+            if (data.tier === 'pro' || data.tier === 'developer') {
+                setIsChecking(false);
+                return true;
+            }
+
+            setShowPaywall(true);
+            setIsChecking(false);
+            return false;
+        } catch (error) {
+            console.error('Error checking subscription:', error);
+            setIsChecking(false);
+            return false;
+        }
+    };
+
+    const handleExport = async (format: 'pdf' | 'json' | 'txt') => {
+        const hasAccess = await checkAccess();
+        if (!hasAccess) return;
+
+        if (format === 'pdf') exportPDF();
+        else if (format === 'json') exportJSON();
+        else if (format === 'txt') exportTXT();
+    };
 
     const exportTXT = () => {
         const content = `OSINT VISION - ANALYSIS REPORT
@@ -86,25 +129,35 @@ https://osint-vision.vercel.app
     return (
         <div className="flex gap-2 justify-end mt-4">
             <button
-                onClick={exportPDF}
-                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded flex items-center gap-2 text-sm font-medium transition-colors"
+                onClick={() => handleExport('pdf')}
+                disabled={isChecking}
+                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded flex items-center gap-2 text-sm font-medium transition-colors disabled:opacity-50"
             >
                 <span>📄</span> Export PDF
             </button>
 
             <button
-                onClick={exportJSON}
-                className="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded flex items-center gap-2 text-sm font-medium transition-colors"
+                onClick={() => handleExport('json')}
+                disabled={isChecking}
+                className="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded flex items-center gap-2 text-sm font-medium transition-colors disabled:opacity-50"
             >
                 <span>📊</span> Export JSON
             </button>
 
             <button
-                onClick={exportTXT}
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded flex items-center gap-2 text-sm font-medium transition-colors"
+                onClick={() => handleExport('txt')}
+                disabled={isChecking}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded flex items-center gap-2 text-sm font-medium transition-colors disabled:opacity-50"
             >
                 <span>📝</span> Export TXT
             </button>
+
+            <PaywallModal
+                show={showPaywall}
+                onClose={() => setShowPaywall(false)}
+                title={!user ? "SIGN IN TO EXPORT" : "UPGRADE TO PRO TO EXPORT"}
+                description={!user ? "Please sign in to download your intelligence reports." : "Free users can view reports online. Upgrade to Pro to download PDF and JSON reports."}
+            />
         </div>
     );
 }

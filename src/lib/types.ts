@@ -1,5 +1,28 @@
 export type AnalysisMode = 'people' | 'location' | 'military' | 'ocr';
 
+export type UserTier = 'free' | 'pro' | 'developer';
+
+export interface User {
+    id: string;
+    clerk_id: string;
+    email: string;
+    tier: UserTier;
+    analyses_used: number;
+    analyses_limit: number;
+    period_start: string;
+    period_end: string;
+}
+
+export interface UsageLog {
+    id: string;
+    user_id: string;
+    mode: AnalysisMode;
+    cost: number;
+    success: boolean;
+    error_message?: string;
+    timestamp: string;
+}
+
 export interface AnalysisResult {
     mode: AnalysisMode;
     timestamp: string;

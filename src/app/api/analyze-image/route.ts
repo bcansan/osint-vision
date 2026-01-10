@@ -36,7 +36,9 @@ export async function POST(req: NextRequest) {
                 remaining: 0,
                 resetAt: rateLimit.resetAt,
                 message: userId
-                    ? 'Monthly limit reached. Please upgrade to Pro.'
+                    ? (rateLimit.limit === 1
+                        ? 'Free analysis used. Please upgrade to Pro for more.'
+                        : 'Monthly limit reached. Please upgrade your plan.')
                     : 'Free analysis used. Please sign in to continue.'
             }, { status: 429 });
         }
@@ -201,7 +203,7 @@ Si hay discrepancia → Explica por qué y mantén confianza baja
                     await logUsage(dbUser.id, mode, getCost(mode), true);
                 }
             } catch (dbError) {
-                console.error('Error updating usage in DB:', dbError);
+                console.error('Error updating usage in DB (non-critical):', dbError);
             }
         }
 
