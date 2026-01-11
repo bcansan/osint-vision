@@ -27,8 +27,7 @@
     "react-dom": "19.2.3",
     "react-markdown": "^10.1.0",
     "serpapi": "^2.2.1",
-    "sharp": "^0.34.5",
-    "stripe": "^17.4.0"
+    "sharp": "^0.34.5"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

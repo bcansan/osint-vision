@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth, currentUser } from '@clerk/nextjs/server';
-import Stripe from 'stripe';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-    apiVersion: '2025-01-27-preview' as any,
-});
+const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY!;
+const STRIPE_PRICE_ID = process.env.STRIPE_PRICE_ID!;
 
 export async function POST(req: NextRequest) {
     try {
@@ -18,21 +16,33 @@ export async function POST(req: NextRequest) {
         const email = user.emailAddresses[0].emailAddress;
         const origin = req.headers.get('origin') || 'https://osint-vision.vercel.app';
 
-        const session = await stripe.checkout.sessions.create({
-            customer_email: email,
-            line_items: [
-                {
-                    price: process.env.STRIPE_PRICE_ID,
-                    quantity: 1,
-                },
-            ],
-            mode: 'subscription',
-            success_url: `${origin}/analyze?success=true`,
-            cancel_url: `${origin}/analyze?canceled=true`,
-            metadata: {
-                clerkUserId: userId,
+        // Direct fetch to Stripe API to avoid SDK versioning issues
+        const response = await fetch('https://api.stripe.com/v1/checkout/sessions', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${STRIPE_SECRET_KEY}`,
+                'Content-Type': 'application/x-www-form-urlencoded',
             },
+            body: new URLSearchParams({
+                'customer_email': email,
+                'mode': 'subscription',
+                'success_url': `${origin}/analyze?success=true`,
+                'cancel_url': `${origin}/analyze?canceled=true`,
+                'line_items[0][price]': STRIPE_PRICE_ID,
+                'line_items[0][quantity]': '1',
+                'metadata[clerkUserId]': userId,
+            }).toString(),
         });
+
+        const session = await response.json();
+
+        if (!response.ok) {
+            console.error('Stripe API error:', session);
+            return NextResponse.json(
+                { error: session.error?.message || 'Stripe API error' },
+                { status: response.status }
+            );
+        }
 
         return NextResponse.json({ url: session.url });
     } catch (error: any) {
